@@ -1,8 +1,9 @@
-from typing import List
-import uvicorn
 from fastapi import FastAPI, HTTPException, Depends, status
 from pydantic import BaseModel
+from typing import List
+import uvicorn
 import openai
+import csv
 
 # Configurando dependências
 app = FastAPI()
@@ -18,17 +19,13 @@ class User(BaseModel):
     pokemons: list
     
 # Funções
-def valid_trainer(trainer_id):
-    valid = True if trainer_id in trainers else None
-    return valid
-
-def valid_trainer_pokemon(trainer_id, pokemon_name):
-    valid = None
-    
-    if trainer_id in trainers:
-        valid = True if pokemon_name in trainers[trainer_id]['pokemons'] else None
-    
-    return valid
+def check_pokemon(pokemon_name):
+    with open('database.csv', 'r') as csvfile:
+        dataframe = csv.DictReader(csvfile)
+        for row in dataframe:
+            if row['Name'] == pokemon_name:
+                return True
+        return None
 
 # GET
 @app.get("/list-trainers/", response_model=List[User])
@@ -38,42 +35,38 @@ def list_trainers():
 @app.get("/trainer_details/{trainer_id}")
 def list_pokemons(trainer_id: str):
     return trainers[trainer_id]
+
+@app.get("/pokemon_details/{pokemon_name}")
+def pokemon_details(pokemon_name: str):
+    if(check_pokemon(pokemon_name)):
+        with open('database.csv', 'r') as csvfile:
+            dataframe = csv.DictReader(csvfile)
+            for row in dataframe:
+                if row['Name'] == pokemon_name:
+                    return row
+            return None
     
-@app.get("/ai_analise_pokemon/{trainer_id}/{pokemon_name}")
-def ai_analise_pokemon(trainer_id: str, pokemon_name: str):
-    
-    trainer_name = trainers[trainer_id]['name'] if valid_trainer(trainer_id) else None
-    valid_pokemon = valid_trainer_pokemon(trainer_id, pokemon_name)
-    
-    print("treinador: ", trainer_name)
-    print("pokemon: ", valid_pokemon)
-    
-    if (trainer_name != None and valid_pokemon == True):
+@app.get("/ai_analise_pokemon/{pokemon_name}")
+def ai_pokemon_analise(pokemon_name: str):
+    if (check_pokemon(pokemon_name) == True):
         completion = openai.ChatCompletion.create(
             model = "gpt-3.5-turbo",
             messages = [
-                {
-                    "role": "system", 
-                    "content": "Você é o professor Carvalho, treinador pokemon, e gosta de explicar tudo sobre pokemons."},
-                {
-                    "role": "user", 
-                    "content": f"Crie uma mensagem para o treinador pokemon {trainer_name} sobre as vantagens, desvantagens do pokemon {pokemon_name} e uma curiosidade sobre o pokemon. (máximo de 100 caracteres)"
-                }
-            ]
-        )
-        
+                    {
+                        "role": "system", 
+                        "content": "Você é o professor Carvalho, treinador pokemon, e gosta de explicar tudo sobre pokemons."},
+                    {
+                        "role": "user", 
+                        "content": f"Crie uma mensagem para o treinador pokemon sobre as vantagens, desvantagens do pokemon {pokemon_name} e uma curiosidade sobre o pokemon. (máximo de 100 caracteres)"
+                    }
+                ]
+            )
+            
         return completion.choices[0].message.content.strip('\"')
-    
-    if(trainer_name != None and valid_pokemon == None):
-        raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail= f"Este treinador não possui o pokemon {pokemon_name}."
-        )
-    
-    
+
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail= f"Treinador não encontrado."
+        detail="Pokemon não encontrado"
     )
 
 # POST
@@ -89,16 +82,30 @@ def create_user(user: User):
 def update_user(trainer_id: str, user: User):
     if trainer_id in trainers:
         existing_user = trainers[trainer_id]
-        existing_user.name = user.name
-        existing_user.age = user.age
-        existing_user.pokemons = user.pokemons
-        return {'message': f'Usuário {trainer_id} atualizado'}
+        
+        name = user.name
+        age = user.age
+        pokemons = user.pokemons
+        
+        if(name != "" and age > 5):
+            existing_user.name = user.name
+            existing_user.age = user.age
+            
+            valid_pokemons = True
+            for pokemon in pokemons:
+                if (check_pokemon(pokemon) == None):
+                    valid_pokemons = None
+            
+            if (valid_pokemons):
+                existing_user.pokemons = user.pokemons
+                return {'message': f'Treinador {trainer_id} atualizado'}
+            
+            return {'error': f'Lista de Pokemons inválida.'}
+        
+        return {'error': f'Nome de usuário ou Idade inválido'}
     else:
         trainers[trainer_id] = user
         return {'message': f'Usuário {trainer_id} criado'}
-   
-    
-
 
 # DELETE
 @app.delete("/delete-trainer/{trainer_id}")
