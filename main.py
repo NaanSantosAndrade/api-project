@@ -7,7 +7,7 @@ import csv
 
 # Configurando dependências
 app = FastAPI()
-openai.api_key = "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"
+openai.api_key = ""
 
 # Banco de dados
 trainers = {}
@@ -17,6 +17,9 @@ class User(BaseModel):
     name: str
     age: int
     pokemons: list
+    
+class TokenModel(BaseModel):
+    token: str
     
 # Funções
 def check_pokemon(pokemon_name):
@@ -70,14 +73,19 @@ def ai_pokemon_analise(pokemon_name: str):
     )
 
 # POST
+@app.post("/change-openai-token/", response_model=None)
+def change_openai_token(token_model: TokenModel):
+    new_token = token_model.token
+    openai.api_key = new_token
+    return {"token": new_token}
+
 @app.post("/create-trainer/")
-def create_user(user: User):
+def create_trainer(user: User):
     treinador_id = str(len(trainers) + 1)
     trainers[treinador_id] = user
     return {"user_id": treinador_id, "user": user}
 
 # PUT
-# # TODO - método PUT
 @app.put("/update-pokemon-group/{trainer_id}/")
 def update_user(trainer_id: str, user: User):
     if trainer_id in trainers:
@@ -119,6 +127,4 @@ def delete_user(trainer_id: str):
         detail="User not found"
     )
 
-
-
-uvicorn.run(app, host="0.0.0.0", port=8000)
+uvicorn.run(app, host="0.0.0.0", port=80)
