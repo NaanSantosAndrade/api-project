@@ -2,6 +2,7 @@
 
 ## Introdução
 Este é um projeto para o Módulo de Introdução a Ciência de Dados do Bootcamp Santander 2023
+A utilização da temática de Pokemon é porque foi fácil de encontrar uma database em CSV 🙃
 Aqui o objetivo é criar um simples ETL (Extract, Transform, Load) e aproveitando a oportunidade estudei para desenvolver minhas próprias APIs.
 Com o tempo irei aprimorar as boas práticas do projeto e da documentação.
 
