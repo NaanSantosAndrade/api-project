@@ -1,4 +1,6 @@
-# api-project
+Este é um projeto para o Módulo de Introdução a Ciência de Dados do Bootcamp Santander 2023
+Aqui o objetivo é criar um simples ETL (Extract, Transform, Load) e aproveitando a oportunidade estudei para desenvolver minhas próprias APIs.
+Com o tempo irei aprimorar as boas práticas do projeto e da documentação.
 
 Google Colab ETL Project:
 https://colab.research.google.com/drive/11CkrdkccuaoOw1ANWIdF-cqN2WKN27Mz#scrollTo=HLN0iDgThgyK
